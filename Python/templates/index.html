@@ -14,38 +14,56 @@
   </head>
   <body class="bg-gray-800 text-white min-h-screen">
     <div class="container py-5">
-      <!-- Title and Add Todo -->
       <div class="text-center mb-5">
         <h1 class="text-4xl font-bold">Todo App</h1>
+        <p class="text-1xl my-4 text-gray-400">
+          Add or modify your daily tasks.
+        </p>
         <button
-          class="mt-3 btn btn-primary"
+          class="mt-3 btn btn-primary px-[40px]"
           data-bs-toggle="modal"
           data-bs-target="#addTodoModal"
         >
           Add Todo
         </button>
       </div>
-
-      <!-- Todo Grid -->
       <div class="row gy-4">
-        <!-- Todo Card Template -->
+        {% for todo in todos %}
         <div class="col-12 col-md-4">
-          <div class="p-4 bg-gray-700 rounded-lg shadow-md">
-            <h3 class="text-xl font-semibold">Todo Title</h3>
-            <p class="mt-2 text-gray-400">
-              This is a sample description for the todo item.
-            </p>
+          <div class="p-4 bg-gray-700 rounded-lg shadow-md relative">
+            <h3 class="text-xl font-semibold">{{ todo.title }}</h3>
+            <p class="mt-2 text-gray-400">{{ todo.description }}</p>
+            <span
+              class="mt-2 text-gray-400 text-[12px] absolute top-[16px] right-[18px]"
+              >{{ todo.created_at }}</span
+            >
             <div class="mt-4 flex justify-between">
-              <button class="btn btn-success btn-sm">Complete</button>
-              <button class="btn btn-danger btn-sm">Delete</button>
+              <form
+                method="POST"
+                action="/toggle-todo/{{ todo.id }}"
+                class="d-inline"
+              >
+                <button type="submit" class="btn btn-success btn-sm">
+                  {% if todo.is_completed %} Undo {% else %} Complete {% endif
+                  %}
+                </button>
+              </form>
+              <form
+                method="POST"
+                action="/delete-todo/{{ todo.id }}"
+                class="d-inline"
+              >
+                <button type="submit" class="btn btn-danger btn-sm">
+                  Delete
+                </button>
+              </form>
             </div>
           </div>
         </div>
-        <!-- Add more todos dynamically here -->
+        {% endfor %}
       </div>
     </div>
 
-    <!-- Add Todo Modal -->
     <div
       class="modal fade"
       id="addTodoModal"
@@ -56,7 +74,12 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="addTodoModalLabel">Add Todo</h5>
+            <h5
+              class="modal-title text-secondary font-bold"
+              id="addTodoModalLabel"
+            >
+              Add Todo
+            </h5>
             <button
               type="button"
               class="btn-close"
@@ -65,28 +88,27 @@
             ></button>
           </div>
           <div class="modal-body">
-            <form id="todoForm">
+            <form method="POST" action="/add-todo">
               <div class="mb-3">
-                <label for="todoTitle" class="form-label">Title</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="todoTitle"
-                  required
-                />
+                <label for="todoTitle" class="form-label text-secondary"
+                  >Title</label
+                >
+                <input type="text" class="form-control" name="title" required />
               </div>
               <div class="mb-3">
-                <label for="todoDescription" class="form-label"
+                <label for="todoDescription" class="form-label text-secondary"
                   >Description</label
                 >
                 <textarea
                   class="form-control"
-                  id="todoDescription"
+                  name="description"
                   rows="3"
                   required
                 ></textarea>
               </div>
-              <button type="submit" class="btn btn-primary">Add Todo</button>
+              <button type="submit" class="btn btn-secondary float-right">
+                Add Todo
+              </button>
             </form>
           </div>
         </div>
@@ -103,41 +125,5 @@
       integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
       crossorigin="anonymous"
     ></script>
-    <script>
-      const todoForm = document.getElementById("todoForm");
-      const todoContainer = document.querySelector(".row");
-
-      // Handle form submission
-      todoForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-
-        // Get form values
-        const title = document.getElementById("todoTitle").value;
-        const description = document.getElementById("todoDescription").value;
-
-        // Create a new todo card
-        const todoCard = document.createElement("div");
-        todoCard.className = "col-12 col-md-4";
-        todoCard.innerHTML = `
-          <div class="p-4 bg-gray-700 rounded-lg shadow-md">
-            <h3 class="text-xl font-semibold">${title}</h3>
-            <p class="mt-2 text-gray-400">${description}</p>
-            <div class="mt-4 flex justify-between">
-              <button class="btn btn-success btn-sm">Complete</button>
-              <button class="btn btn-danger btn-sm">Delete</button>
-            </div>
-          </div>
-        `;
-
-        // Append to container
-        todoContainer.appendChild(todoCard);
-
-        // Reset form and close modal
-        todoForm.reset();
-        const modalElement = document.getElementById("addTodoModal");
-        const modal = bootstrap.Modal.getInstance(modalElement);
-        modal.hide();
-      });
-    </script>
   </body>
 </html>

@@ -1,9 +1,9 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 import psycopg2
 from dotenv import load_dotenv
 import os
-load_dotenv()
 
+load_dotenv()
 
 DB_URL = os.getenv("POSTGRESQL_URL")
 app = Flask(__name__)
@@ -12,37 +12,12 @@ def getDbConnection():
     try:
         conn = psycopg2.connect(DB_URL)
         return conn
-    except (Exception, psycopg2.Error) as error:
-        print("Error while connecting to PostgreSQL", error)
+    except Exception as error:
+        print("Error connecting to PostgreSQL:", error)
         return None
-    
+
 @app.route("/")
-def renderTemplate():
-    return render_template("index.html")
-
-@app.route("/add-todo", methods=['POST'])
-def addTodo():
-    data = request.get_json()
-    title = data.get("title")
-    description = data.get("description")
-    if not title:
-        return jsonify({"error": "Title is required."}), 400
-    query = """
-    INSERT INTO todos (title, description)
-    VALUES (%s, %s)
-    RETURNING id, title, description, is_completed, created_at;
-    """
-    conn = getDbConnection()
-    cur = conn.cursor()
-    cur.execute(query, (title, description))
-    todo = cur.fetchone()
-    conn.commit()
-    cur.close()
-    conn.close()
-    return jsonify({"id": todo[0], "title": todo[1], "description": todo[2], "is_completed": todo[3], "created_at": todo[4]}), 201
-
-@app.route("/todos", methods=['GET'])
-def getTodos():
+def index():
     query = "SELECT id, title, description, is_completed, created_at FROM todos ORDER BY created_at DESC;"
     conn = getDbConnection()
     cur = conn.cursor()
@@ -50,45 +25,48 @@ def getTodos():
     todos = cur.fetchall()
     cur.close()
     conn.close()
-    return jsonify([{"id": todo[0], "title": todo[1], "description": todo[2], "is_completed": todo[3], "created_at": todo[4]} for todo in todos])
+    todos_data = [
+        {"id": todo[0], "title": todo[1], "description": todo[2], "is_completed": todo[3], "created_at": str(todo[4])[:10]}
+        for todo in todos
+    ]
+    return render_template("index.html", todos=todos_data)
 
-
-@app.route("/toggle-todo/<int:id>", methods=['PUT'])
-def toggleTodo(id):
-    query = """
-    UPDATE todos
-    SET is_completed = NOT is_completed
-    WHERE id = %s
-    RETURNING id, title, description, is_completed, created_at;
-    """
+@app.route("/add-todo", methods=["POST"])
+def add_todo():
+    title = request.form.get("title")
+    description = request.form.get("description")
+    if not title:
+        return redirect(url_for("index"))
+    query = "INSERT INTO todos (title, description) VALUES (%s, %s);"
     conn = getDbConnection()
     cur = conn.cursor()
-    cur.execute(query, (id,))
-    todo = cur.fetchone()
+    cur.execute(query, (title, description))
     conn.commit()
     cur.close()
     conn.close()
-    if not todo:
-        return jsonify({"error": "Todo not found"}), 404
+    return redirect(url_for("index"))
 
-    return jsonify({"id": todo[0], "title": todo[1], "description": todo[2], "is_completed": todo[3], "created_at": todo[4]}), 200
-
-
-@app.route("/delete-todo/<int:id>", methods=['DELETE'])
-def deleteTodo(id):
-    query = "DELETE FROM todos WHERE id = %s RETURNING id;"
+@app.route("/toggle-todo/<int:id>", methods=["POST"])
+def toggle_todo(id):
+    query = "UPDATE todos SET is_completed = NOT is_completed WHERE id = %s;"
     conn = getDbConnection()
     cur = conn.cursor()
     cur.execute(query, (id,))
-    deleted = cur.fetchone()
     conn.commit()
     cur.close()
     conn.close()
-    if not deleted:
-        return jsonify({"error": "Todo not found"}), 404
-    return jsonify({"message": "Todo deleted successfully", "id": deleted[0]}), 200
+    return redirect(url_for("index"))
 
-
+@app.route("/delete-todo/<int:id>", methods=["POST"])
+def delete_todo(id):
+    query = "DELETE FROM todos WHERE id = %s;"
+    conn = getDbConnection()
+    cur = conn.cursor()
+    cur.execute(query, (id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return redirect(url_for("index"))
 
 if __name__ == "__main__":
     app.run(debug=True)
