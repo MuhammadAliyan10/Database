@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Todo App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+  </head>
+  <body class="bg-gray-800 text-white min-h-screen">
+    <div class="container py-5">
+      <div class="text-center mb-5">
+        <h1 class="text-4xl font-bold">Todo App</h1>
+        <p class="text-1xl my-4 text-gray-400">
+          Add or modify your daily tasks.
+        </p>
+        <button
+          class="mt-3 btn btn-primary px-[40px]"
+          data-bs-toggle="modal"
+          data-bs-target="#addTodoModal"
+        >
+          Add Todo
+        </button>
+      </div>
+
+      <!-- Displaying Todos -->
+      <div class="row gy-4" id="todo-list">
+        <!-- Todos will be injected dynamically using JavaScript -->
+      </div>
+    </div>
+
+    <!-- Modal for adding new todo -->
+    <div
+      class="modal fade"
+      id="addTodoModal"
+      tabindex="-1"
+      aria-labelledby="addTodoModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5
+              class="modal-title text-secondary font-bold"
+              id="addTodoModalLabel"
+            >
+              Add Todo
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="todo-form">
+              <div class="mb-3">
+                <label for="todoTitle" class="form-label text-secondary"
+                  >Title</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="todoTitle"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="todoDescription" class="form-label text-secondary"
+                  >Description</label
+                >
+                <textarea
+                  class="form-control"
+                  id="todoDescription"
+                  rows="3"
+                  required
+                ></textarea>
+              </div>
+              <button type="submit" class="btn btn-secondary float-right">
+                Add Todo
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS and Popper -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+      integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
+      integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      // DOM Elements
+      const todoListContainer = document.getElementById("todo-list");
+      const todoForm = document.getElementById("todo-form");
+      const todoTitleInput = document.getElementById("todoTitle");
+      const todoDescriptionInput = document.getElementById("todoDescription");
+
+      // Render Todos
+
+      function fetchTodos() {
+        fetch("/todos")
+          .then((response) => response.json())
+          .then((data) => {
+            todos = data;
+            renderTodos();
+          });
+      }
+      function renderTodos() {
+        todoListContainer.innerHTML = "";
+        todos.forEach((todo) => {
+          const todoCard = document.createElement("div");
+          todoCard.classList.add("col-12", "col-md-4");
+          todoCard.innerHTML = `
+            <div class="p-4 bg-gray-700 rounded-lg shadow-md relative">
+              <h3 class="text-xl font-semibold">${todo.title}</h3>
+              <p class="mt-2 text-gray-400">${todo.description}</p>
+              <span class="mt-2 text-gray-400 text-[12px] absolute top-[16px] right-[18px]">${new Date().toLocaleString()}</span>
+              <div class="mt-4 flex justify-between">
+                <button class="btn ${
+                  todo.isCompleted ? "btn-warning" : "btn-success"
+                } btn-sm" onclick="toggleCompletion(${todo.id})">
+                  ${todo.isCompleted ? "Undo" : "Complete"}
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteTodo(${
+                  todo.id
+                })">
+                  Delete
+                </button>
+              </div>
+            </div>
+          `;
+          todoListContainer.appendChild(todoCard);
+        });
+      }
+
+      // Add Todo
+      todoForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        const newTodo = {
+          id: Date.now(),
+          title: todoTitleInput.value,
+          description: todoDescriptionInput.value,
+          isCompleted: false,
+        };
+        todos.push(newTodo);
+        renderTodos();
+        // Clear form and close modal
+        todoTitleInput.value = "";
+        todoDescriptionInput.value = "";
+        const modal = bootstrap.Modal.getInstance(
+          document.getElementById("addTodoModal")
+        );
+        modal.hide();
+      });
+
+      // Toggle Todo Completion Status
+      function toggleCompletion(todoId) {
+        const todo = todos.find((todo) => todo.id === todoId);
+        if (todo) {
+          todo.isCompleted = !todo.isCompleted;
+          renderTodos();
+        }
+      }
+
+      // Delete Todo
+      function deleteTodo(todoId) {
+        const index = todos.findIndex((todo) => todo.id === todoId);
+        if (index > -1) {
+          todos.splice(index, 1);
+          renderTodos();
+        }
+      }
+
+      // Initial Render
+      renderTodos();
+    </script>
+  </body>
+</html>
