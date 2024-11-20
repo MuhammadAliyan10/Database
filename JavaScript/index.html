@@ -16,7 +16,7 @@
     <div class="container py-5">
       <div class="text-center mb-5">
         <h1 class="text-4xl font-bold">Todo App</h1>
-        <p class="text-1xl my-4 text-gray-400">
+        <p class="text-xl my-4 text-gray-400">
           Add or modify your daily tasks.
         </p>
         <button
@@ -30,7 +30,7 @@
 
       <!-- Displaying Todos -->
       <div class="row gy-4" id="todo-list">
-        <!-- Todos will be injected dynamically using JavaScript -->
+        <!-- Todos will be injected dynamically -->
       </div>
     </div>
 
@@ -104,90 +104,100 @@
     ></script>
 
     <script>
-      // DOM Elements
-      const todoListContainer = document.getElementById("todo-list");
-      const todoForm = document.getElementById("todo-form");
-      const todoTitleInput = document.getElementById("todoTitle");
-      const todoDescriptionInput = document.getElementById("todoDescription");
+      // Fetch todos and render them
+      const fetchTodos = async () => {
+        try {
+          const res = await fetch("http://localhost:3000/");
+          const { data } = await res.json();
 
-      // Render Todos
+          const todoList = document.getElementById("todo-list");
+          todoList.innerHTML = "";
 
-      function fetchTodos() {
-        fetch("/todos")
-          .then((response) => response.json())
-          .then((data) => {
-            todos = data;
-            renderTodos();
+          data.forEach((todo) => {
+            const todoItem = document.createElement("div");
+            todoItem.className = "col-12 col-md-4";
+
+            todoItem.innerHTML = `
+        <div class="p-4 bg-gray-700 rounded-lg shadow-md relative">
+          <h3 class="text-xl font-semibold">${todo.title}</h3>
+          <p class="mt-2 text-gray-400">${todo.description}</p>
+          <span class="mt-2 text-gray-400 text-[12px] absolute top-[16px] right-[18px]">
+            ${todo.created_at.slice(0, 10)}
+          </span>
+          <div class="mt-4 flex justify-between">
+            <!-- Complete/Undo Button -->
+            <form method="POST" action="/toggle-todo/${
+              todo.id
+            }" class="d-inline">
+              <button type="submit" class="btn btn-success btn-sm">
+                ${todo.is_completed ? "Undo" : "Complete"}
+              </button>
+            </form>
+            <!-- Delete Button -->
+
+           <button type="button" onclick="deleteTodo(${
+             todo.id
+           })" class="btn btn-danger btn-sm">
+  Delete
+</button>
+
+
+          </div>
+        </div>
+      `;
+            todoList.appendChild(todoItem);
           });
-      }
-      function renderTodos() {
-        todoListContainer.innerHTML = "";
-        todos.forEach((todo) => {
-          const todoCard = document.createElement("div");
-          todoCard.classList.add("col-12", "col-md-4");
-          todoCard.innerHTML = `
-            <div class="p-4 bg-gray-700 rounded-lg shadow-md relative">
-              <h3 class="text-xl font-semibold">${todo.title}</h3>
-              <p class="mt-2 text-gray-400">${todo.description}</p>
-              <span class="mt-2 text-gray-400 text-[12px] absolute top-[16px] right-[18px]">${new Date().toLocaleString()}</span>
-              <div class="mt-4 flex justify-between">
-                <button class="btn ${
-                  todo.isCompleted ? "btn-warning" : "btn-success"
-                } btn-sm" onclick="toggleCompletion(${todo.id})">
-                  ${todo.isCompleted ? "Undo" : "Complete"}
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteTodo(${
-                  todo.id
-                })">
-                  Delete
-                </button>
-              </div>
-            </div>
-          `;
-          todoListContainer.appendChild(todoCard);
-        });
-      }
+        } catch (error) {
+          console.error("Error fetching todos:", error.message);
+        }
+      };
 
-      // Add Todo
-      todoForm.addEventListener("submit", function (event) {
+      // Add a new todo
+      const addTodo = async (event) => {
         event.preventDefault();
-        const newTodo = {
-          id: Date.now(),
-          title: todoTitleInput.value,
-          description: todoDescriptionInput.value,
-          isCompleted: false,
-        };
-        todos.push(newTodo);
-        renderTodos();
-        // Clear form and close modal
-        todoTitleInput.value = "";
-        todoDescriptionInput.value = "";
-        const modal = bootstrap.Modal.getInstance(
-          document.getElementById("addTodoModal")
-        );
-        modal.hide();
-      });
+        try {
+          const title = document.getElementById("todoTitle").value;
+          const description = document.getElementById("todoDescription").value;
 
-      // Toggle Todo Completion Status
-      function toggleCompletion(todoId) {
-        const todo = todos.find((todo) => todo.id === todoId);
-        if (todo) {
-          todo.isCompleted = !todo.isCompleted;
-          renderTodos();
+          const res = await fetch("http://localhost:3000/addTodo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, description }),
+          });
+
+          if (!res.ok) throw new Error("Failed to add todo");
+
+          document.getElementById("todo-form").reset();
+          fetchTodos(); // Refresh the list
+          const modal = bootstrap.Modal.getInstance(
+            document.getElementById("addTodoModal")
+          );
+          modal.hide();
+        } catch (error) {
+          console.error("Error adding todo:", error.message);
         }
-      }
+      };
 
-      // Delete Todo
-      function deleteTodo(todoId) {
-        const index = todos.findIndex((todo) => todo.id === todoId);
-        if (index > -1) {
-          todos.splice(index, 1);
-          renderTodos();
+      // Delete a todo
+      const deleteTodo = async (id) => {
+        try {
+          const res = await fetch(`http://localhost:3000/deleteTodo/${id}`, {
+            method: "DELETE",
+          });
+
+          if (!res.ok) throw new Error("Failed to delete todo");
+
+          fetchTodos(); // Refresh the list
+        } catch (error) {
+          console.error("Error deleting todo:", error.message);
         }
-      }
+      };
 
-      // Initial Render
-      renderTodos();
+      // Event listener for form submission
+      document.getElementById("todo-form").addEventListener("submit", addTodo);
+
+      // Initial fetch to display todos
+      fetchTodos();
     </script>
   </body>
 </html>

@@ -2,6 +2,8 @@ const { Client } = require("pg");
 require("dotenv").config();
 const express = require("express");
 const app = express();
+var cors = require("cors");
+app.use(cors());
 
 app.use(express.json());
 
@@ -30,11 +32,47 @@ app.get("/", async (req, res) => {
   try {
     const query =
       "SELECT id, title, description, is_completed, created_at FROM todos ORDER BY created_at DESC";
+
     const result = await client.query(query);
-    res.json(result.rows);
+
+    res.json({
+      status: "success",
+      data: result.rows,
+    });
   } catch (err) {
     console.error("Error executing query:", err.message);
-    res.status(500).send("Error fetching todos");
+    res.status(500).json({
+      status: "error",
+      message: "Failed to fetch todos",
+    });
+  }
+});
+
+app.put("/updateTodo/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: "Todo id is required" });
+    }
+
+    const query =
+      "UPDATE todos SET is_completed = NOT is_completed WHERE id = $1 RETURNING *";
+    const result = await client.query(query, [id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Todo not found" });
+    }
+
+    res.json({
+      message: "Todo updated successfully",
+      todo: result.rows[0],
+    });
+  } catch (err) {
+    console.error("Error executing query:", err.message);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to update todo",
+    });
   }
 });
 
@@ -51,7 +89,7 @@ app.post("/addTodo", async (req, res) => {
     const result = await client.query(query, values);
     res.status(201).json({
       message: "Todo added successfully",
-      todo: result.rows[0], // return the inserted todo
+      todo: result.rows[0],
     });
   } catch (err) {
     console.error("Error executing query:", err.message);
