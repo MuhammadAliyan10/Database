@@ -2,12 +2,28 @@ import express from "express";
 import cors from "cors";
 import { Client } from "pg";
 import dotenv from "dotenv";
-import bcrypt from "bcryptjs";
+import authRouter from "../Routes/auth";
+import authenticationToken from "../Routes/auth";
+import path from "path";
 
 const app = express();
 const port = 3000;
+app.use("/auth", authRouter);
+app.use(authenticationToken);
 
-// Middleware
+app.use(express.static(path.join(__dirname, "../public")));
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/index.html"));
+});
+
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/login.html"));
+});
+app.get("/register", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/register.html"));
+});
+
 app.use(cors());
 app.use(express.json());
 dotenv.config();
