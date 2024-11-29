@@ -1,9 +1,13 @@
-import { Router, Response, Request } from "express";
+import { Router, Request, Response, RequestHandler } from "express";
+import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { Client } from "pg";
 
+const app = express();
+app.use(express.json());
 const router = Router();
+
 const client = new Client({
   user: process.env.POSTGRES_USER,
   host: process.env.POSTGRES_HOST,
@@ -35,57 +39,98 @@ interface LoginRequestBody {
   password: string;
 }
 
-router.post(
-  "/register",
-  async (req: Request<{}, {}, RegisterRequestBody>, res: Response) => {
-    const { email, username, password } = req.body;
+// Register handler
+const registerHandler: RequestHandler<{}, {}, RegisterRequestBody> = async (
+  req,
+  res
+): Promise<void> => {
+  const { email, username, password } = req.body;
 
+  try {
+    // Check if email already exists
     const checkEmailQuery = `SELECT * FROM users WHERE email = $1`;
     const emailCheckResult = await client.query(checkEmailQuery, [email]);
 
     if (emailCheckResult.rows.length > 0) {
-      return res.status(400).json({ message: "Email already in use" });
+      res.status(400).json({ message: "Email already in use" });
+      return; // Ensure we exit the function here
     }
 
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const query = `INSERT INTO users (username, email, password) VALUES ($1, $2, $3)`;
-    try {
-      await client.query(query, [username, email, hashedPassword]);
-      res.status(201).json({ message: "User registered successfully" });
-    } catch (err) {
-      res.status(500).json({ message: "Error registering user", error: err });
-    }
+    // Insert the new user into the database
+    const insertQuery = `
+      INSERT INTO users (username, email, password)
+      VALUES ($1, $2, $3)
+      RETURNING id, username, email
+    `;
+    const insertResult = await client.query(insertQuery, [
+      username,
+      email,
+      hashedPassword,
+    ]);
+
+    const newUser = insertResult.rows[0];
+
+    // Respond with the created user
+    res.status(201).json({
+      message: "User registered successfully",
+      user: newUser,
+    });
+  } catch (err) {
+    console.error(err);
+
+    // Handle unexpected errors
+    res.status(500).json({
+      message: "Error registering user",
+      error: err instanceof Error ? err.message : "Unknown error",
+    });
   }
-);
+};
 
-// Login route
-router.post(
-  "/login",
-  async (req: Request<{}, {}, LoginRequestBody>, res: Response) => {
-    const { email, password } = req.body;
+const loginHandler: RequestHandler<{}, {}, LoginRequestBody> = async (
+  req,
+  res
+): Promise<void> => {
+  const { email, password } = req.body;
 
-    const query = `SELECT * from users WHERE email = $1`;
+  try {
+    const query = `SELECT * FROM users WHERE email = $1`;
     const result = await client.query(query, [email]);
 
     if (result.rows.length === 0) {
-      return res.status(400).json({ message: "User not found" });
+      return res
+        .status(400)
+        .json({ message: "User not found" }) as unknown as Promise<void>;
     }
 
     const user: User = result.rows[0];
     const match = await bcrypt.compare(password, user.password);
 
     if (match) {
+      const secret = process.env.JWT_SECRET || "default_secret";
       const token = jwt.sign(
         { userId: user.id, username: user.username },
-        process.env.JWT_SECRET || "",
+        secret,
         { expiresIn: "1h" }
       );
-      return res.status(200).json({ token });
+      return res.status(200).json({ token }) as unknown as Promise<void>;
     } else {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res
+        .status(400)
+        .json({ message: "Invalid credentials" }) as unknown as Promise<void>;
     }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      message: "Error logging in",
+      error: err,
+    }) as unknown as Promise<void>;
   }
-);
+};
+
+router.post("/register", registerHandler);
+router.post("/login", loginHandler);
 
 export default router;
