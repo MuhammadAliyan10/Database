@@ -3,10 +3,12 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { Client } from "pg";
+import dotenv from "dotenv";
+dotenv.config();
 
 const app = express();
 app.use(express.json());
-const router = Router();
+const authRouter = Router();
 
 const client = new Client({
   user: process.env.POSTGRES_USER,
@@ -30,7 +32,7 @@ interface User {
 
 interface RegisterRequestBody {
   email: string;
-  username: string;
+  full_name: string;
   password: string;
 }
 
@@ -44,36 +46,30 @@ const registerHandler: RequestHandler<{}, {}, RegisterRequestBody> = async (
   req,
   res
 ): Promise<void> => {
-  const { email, username, password } = req.body;
+  const { email, full_name, password } = req.body;
 
   try {
-    // Check if email already exists
     const checkEmailQuery = `SELECT * FROM users WHERE email = $1`;
     const emailCheckResult = await client.query(checkEmailQuery, [email]);
 
     if (emailCheckResult.rows.length > 0) {
       res.status(400).json({ message: "Email already in use" });
-      return; // Ensure we exit the function here
+      return;
     }
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert the new user into the database
     const insertQuery = `
-      INSERT INTO users (username, email, password)
+      INSERT INTO users (full_name, email, password)
       VALUES ($1, $2, $3)
-      RETURNING id, username, email
     `;
     const insertResult = await client.query(insertQuery, [
-      username,
+      full_name,
       email,
       hashedPassword,
     ]);
 
     const newUser = insertResult.rows[0];
-
-    // Respond with the created user
     res.status(201).json({
       message: "User registered successfully",
       user: newUser,
@@ -81,7 +77,6 @@ const registerHandler: RequestHandler<{}, {}, RegisterRequestBody> = async (
   } catch (err) {
     console.error(err);
 
-    // Handle unexpected errors
     res.status(500).json({
       message: "Error registering user",
       error: err instanceof Error ? err.message : "Unknown error",
@@ -130,7 +125,7 @@ const loginHandler: RequestHandler<{}, {}, LoginRequestBody> = async (
   }
 };
 
-router.post("/register", registerHandler);
-router.post("/login", loginHandler);
+authRouter.post("/register", registerHandler);
+authRouter.post("/login", loginHandler);
 
-export default router;
+export default authRouter;
