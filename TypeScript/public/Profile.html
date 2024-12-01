@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Social Media App</title>
+    <!-- Bootstrap 5 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+      integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        background-color: #f8fafc;
+      }
+
+      .sidebar {
+        background-color: #272d32;
+        color: white;
+        height: 100vh;
+        transition: width 0.3s ease;
+        border-right: 0.5px solid #c7c7c7;
+      }
+
+      .sidebar .nav-link {
+        color: white;
+        transition: background-color 0.3s ease;
+      }
+
+      .sidebar .nav-item:hover,
+      .sidebar .nav-item.active {
+        background-color: #ffb601;
+        color: #ffffff;
+        border-radius: 10px;
+      }
+
+      .sidebar .btn-collapse {
+        background-color: #ffb601;
+        color: black;
+        border: none;
+        transition: background-color 0.3s ease;
+      }
+      .nav-item {
+        display: flex;
+        justify-content: start;
+        align-items: center;
+      }
+
+      .sidebar .btn-collapse:hover {
+        background-color: #272d32;
+        color: white;
+      }
+
+      .navbar-custom {
+        background-color: #272d32;
+      }
+
+      .navbar-custom .nav-link {
+        color: #272d32;
+      }
+
+      .navbar-custom .nav-link:hover {
+        color: white;
+      }
+      .search-bar {
+        width: 40rem;
+        padding: 8px 10px;
+        outline: none !important;
+        font-size: 14px;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Sidebar -->
+    <div class="d-flex">
+      <div class="sidebar p-4" id="sidebar" style="width: 250px">
+        <h4 class="text-center mb-4 tracking-widest text-3xl border-b-2 pb-3">
+          bugBox
+        </h4>
+        <ul class="nav flex-column">
+          <li class="nav-item px-4 mb-3">
+            <span>
+              <i class="fa-solid fa-house"></i>
+            </span>
+            <a class="nav-link" href="/home">Home</a>
+          </li>
+          <li class="nav-item px-4 mb-3">
+            <span>
+              <i class="fa-solid fa-users"></i>
+            </span>
+            <a class="nav-link" href="/home">Friends</a>
+          </li>
+          <li class="nav-item px-4 mb-3">
+            <span>
+              <i class="fa-solid fa-house"></i>
+            </span>
+            <a class="nav-link" href="/home">Posts</a>
+          </li>
+        </ul>
+
+        <ul class="nav flex-column">
+          <li class="border-t-[0.5px] mt-[20rem] mb-4"></li>
+          <li class="nav-item px-4 mb-3 active">
+            <span>
+              <i class="fa-solid fa-user"></i>
+            </span>
+            <a class="nav-link active" href="/profile">Profile</a>
+          </li>
+          <li class="nav-item px-4 mb-3">
+            <span>
+              <i class="fa-solid fa-gear"></i>
+            </span>
+            <a class="nav-link" href="/home">Setting</a>
+          </li>
+          <li class="nav-item px-4 mb-3">
+            <span>
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </span>
+            <a class="nav-link" href="/home">Logout</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="flex-grow-1">
+        <nav class="navbar navbar-expand-lg navbar-light navbar-custom p-3">
+          <div class="gap-0">
+            <input
+              type="text"
+              placeholder="Type to search"
+              class="search-bar"
+            />
+            <button class="btn btn-primary">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+          </div>
+          <div class="user">
+            <span><i class="fa-solid fa-user"></i></span>
+          </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <div class="container mt-4">
+          <div class="row justify-content-center">
+            <div class="col-lg-6">
+              <div class="card shadow-lg border-0 rounded-lg">
+                <div
+                  class="card-header text-center bg-blue-500 text-white py-3"
+                >
+                  <h3 class="text-lg font-semibold">User Profile</h3>
+                </div>
+                <div class="flex justify-center p-4">
+                  <div class="relative">
+                    <img
+                      src=""
+                      id="profileImg"
+                      alt="User Profile"
+                      class="rounded-full shadow-md w-36 h-36 object-cover"
+                    />
+                    <!-- Camera Icon File Input -->
+                    <div
+                      class="absolute bottom-2 right-2 bg-gray-700 rounded-full p-2 shadow-lg"
+                    >
+                      <label
+                        for="uploadImage"
+                        class="text-white cursor-pointer flex items-center justify-center hover:text-blue-400"
+                      >
+                        <i class="fa-solid fa-camera"></i>
+                      </label>
+                      <input
+                        type="file"
+                        id="uploadImage"
+                        accept="image/*"
+                        class="hidden"
+                        onchange="handleImageUpload(event)"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card-body text-center">
+                  <h5 id="fullName" class="font-bold text-lg mb-2">
+                    Full Name
+                  </h5>
+                  <p id="email" class="text-gray-500 mb-2">Email</p>
+                  <p id="username" class="text-gray-600 mb-2">
+                    Username: Loading...
+                  </p>
+                  <p id="bio" class="text-gray-500">Bio: Loading...</p>
+                  <button class="btn btn-primary mt-3 px-4 py-2">
+                    Update Profile
+                  </button>
+                </div>
+                <div class="card-footer text-center bg-gray-100 text-sm">
+                  Joined: <span id="joinedDate">Loading...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap 5 JS & Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const fetchUserData = async () => {
+          const token = localStorage.getItem("authToken");
+          if (!token) {
+            alert("User not authenticated!");
+            return;
+          }
+
+          try {
+            const res = await fetch("/auth/profile", {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+
+            if (!res.ok) {
+              throw new Error("Failed to fetch user data");
+            }
+
+            const { user } = await res.json();
+
+            document.getElementById("profileImg").src =
+              user.profile_image ||
+              "https://via.placeholder.com/150?text=No+Image";
+            document.getElementById("fullName").innerText =
+              user.full_name || "Full Name Not Provided";
+            document.getElementById("email").innerText =
+              user.email || "Email Not Provided";
+            document.getElementById("username").innerText = user.username
+              ? `Username: ${user.username}`
+              : "Username: Not provided";
+            document.getElementById("bio").innerText = user.bio
+              ? `Bio: ${user.bio}`
+              : "Bio: Not provided";
+            document.getElementById("joinedDate").innerText = new Date(
+              user.created_at
+            ).toLocaleDateString();
+          } catch (error) {
+            console.error("Error fetching user data:", error);
+            alert("Failed to load user data. Please try again.");
+          }
+        };
+
+        fetchUserData();
+      });
+
+      const handleImageUpload = async (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          if (file.size > 5 * 1024 * 1024) {
+            alert(
+              "File is too large. Please upload an image smaller than 5MB."
+            );
+            return;
+          }
+
+          const reader = new FileReader();
+
+          reader.onload = async (e) => {
+            const profileImg = document.getElementById("profileImg");
+            const base64Image = e.target.result;
+
+            profileImg.src = base64Image;
+            try {
+              const token = localStorage.getItem("authToken");
+              if (!token) {
+                console.error("No token found");
+                return;
+              }
+
+              console.log("Sending image to backend...");
+
+              const response = await fetch("/auth/profile/image", {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ profile_image: base64Image }),
+              });
+
+              const result = await response.json();
+              if (response.ok) {
+                console.log("Image uploaded and saved to the database");
+              } else {
+                console.error("Error uploading image:", result.message);
+              }
+            } catch (error) {
+              console.error("Error uploading image:", error);
+            }
+          };
+
+          reader.readAsDataURL(file); // Convert the file to Base64
+        }
+      };
+    </script>
+  </body>
+</html>

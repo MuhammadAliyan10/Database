@@ -34,8 +34,14 @@ interface RegisterRequestBody {
   email: string;
   full_name: string;
   password: string;
+  profile_image: string;
 }
-
+interface UpdateProfileBody {
+  email: string;
+  full_name: string;
+  password: string;
+  profile_image: string;
+}
 interface LoginRequestBody {
   email: string;
   password: string;
@@ -125,7 +131,80 @@ const loginHandler: RequestHandler<{}, {}, LoginRequestBody> = async (
   }
 };
 
+const profileHandler: RequestHandler<{}, {}, LoginRequestBody> = async (
+  req,
+  res
+): Promise<void> => {
+  const token = req.headers["authorization"]?.split(" ")[1];
+
+  if (!token) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "") as {
+      userId: string;
+    };
+
+    const query =
+      "SELECT id, email, username, full_name, bio, profile_image, created_at FROM users WHERE id = $1";
+    const result = await client.query(query, [decoded.userId]);
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const user = result.rows[0];
+    res.status(200).json({ user });
+    return;
+  } catch (error) {
+    console.error("Error verifying JWT or querying user:", error);
+    res.status(500).json({ message: "Server error", error });
+    return;
+  }
+};
+
+app.use("/auth", authRouter);
+
+const updateProfileImage: RequestHandler<{}, {}, UpdateProfileBody> = async (
+  req,
+  res
+): Promise<void> => {
+  const token = req.headers["authorization"]?.split(" ")[1];
+  const { profile_image } = req.body;
+
+  if (!token) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "") as {
+      userId: string;
+    };
+
+    if (!profile_image) {
+      res.status(400).json({ message: "Please provide a profile image" });
+      return;
+    }
+    const query = "UPDATE users SET profile_image = $1 WHERE id = $2";
+    const result = await client.query(query, [profile_image, decoded.userId]);
+    if (result.rowCount === 0) {
+      res.status(401).json({ message: "User not found." });
+      return;
+    }
+    res.status(200).json({ message: "Profile updated successfully." });
+  } catch (error) {
+    console.error("Error verifying JWT or querying user:", error);
+    res.status(500).json({ message: "Server error", error });
+    return;
+  }
+};
+
 authRouter.post("/register", registerHandler);
 authRouter.post("/login", loginHandler);
+authRouter.get("/profile", profileHandler);
+authRouter.put("/profile/image", updateProfileImage);
 
 export default authRouter;

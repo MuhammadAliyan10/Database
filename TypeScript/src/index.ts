@@ -10,6 +10,8 @@ import path from "path";
 dotenv.config();
 
 const app = express();
+app.use(express.json({ limit: "10mb" }));
+
 const port = 3000;
 
 app.use(cors());
@@ -32,7 +34,6 @@ app.get("/login", (req: Request, res: Response) => {
 
 app.get("/register", (req: Request, res: Response) => {
   const token = req.headers["authorization"]?.split(" ")[1];
-
   if (token) {
     return res.redirect("/home");
   }
@@ -41,6 +42,9 @@ app.get("/register", (req: Request, res: Response) => {
 
 app.get("/home", (req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
+});
+app.get("/profile", (req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, "../public/profile.html"));
 });
 
 const client = new Client({
