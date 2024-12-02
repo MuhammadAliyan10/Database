@@ -4,6 +4,7 @@ import cors from "cors";
 import { Client } from "pg";
 import dotenv from "dotenv";
 import authRouter from "./Routes/auth";
+import postRouter from "./Routes/Posts";
 import authenticationToken from "./middleware/auth";
 import path from "path";
 
@@ -18,6 +19,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/auth", authRouter);
+app.use("/posts", postRouter);
 
 app.use(express.static(path.join(__dirname, "../public")));
 app.use("/images", express.static(path.join(__dirname, "../Images")));

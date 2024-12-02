@@ -1,6 +1,6 @@
 import { Router, Request, Response, RequestHandler } from "express";
 import express from "express";
-import jwt from "jsonwebtoken";
+import jwt, { TokenExpiredError } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { Client } from "pg";
 import dotenv from "dotenv";
@@ -9,6 +9,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 const authRouter = Router();
+app.use("/auth", authRouter);
 
 const client = new Client({
   user: process.env.POSTGRES_USER,
@@ -24,7 +25,7 @@ const client = new Client({
 client.connect();
 
 interface User {
-  id: string;
+  user_id: string;
   email: string;
   username: string;
   password: string;
@@ -32,6 +33,7 @@ interface User {
 
 interface RegisterRequestBody {
   email: string;
+  username: string;
   full_name: string;
   password: string;
   profile_image: string;
@@ -52,7 +54,7 @@ const registerHandler: RequestHandler<{}, {}, RegisterRequestBody> = async (
   req,
   res
 ): Promise<void> => {
-  const { email, full_name, password } = req.body;
+  const { email, username, full_name, password } = req.body;
 
   try {
     const checkEmailQuery = `SELECT * FROM users WHERE email = $1`;
@@ -66,11 +68,12 @@ const registerHandler: RequestHandler<{}, {}, RegisterRequestBody> = async (
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const insertQuery = `
-      INSERT INTO users (full_name, email, password)
-      VALUES ($1, $2, $3)
+      INSERT INTO users (full_name, username, email, password)
+      VALUES ($1, $2, $3, $4)
     `;
     const insertResult = await client.query(insertQuery, [
       full_name,
+      username.toLowerCase(),
       email,
       hashedPassword,
     ]);
@@ -112,7 +115,7 @@ const loginHandler: RequestHandler<{}, {}, LoginRequestBody> = async (
     if (match) {
       const secret = process.env.JWT_SECRET || "default_secret";
       const token = jwt.sign(
-        { userId: user.id, username: user.username },
+        { userId: user.user_id, username: user.username },
         secret,
         { expiresIn: "1h" }
       );
@@ -148,7 +151,7 @@ const profileHandler: RequestHandler<{}, {}, LoginRequestBody> = async (
     };
 
     const query =
-      "SELECT id, email, username, full_name, bio, profile_image, created_at FROM users WHERE id = $1";
+      "SELECT user_id, email, username, full_name, bio, profile_image, created_at FROM users WHERE user_id = $1";
     const result = await client.query(query, [decoded.userId]);
 
     if (result.rows.length === 0) {
@@ -165,8 +168,6 @@ const profileHandler: RequestHandler<{}, {}, LoginRequestBody> = async (
     return;
   }
 };
-
-app.use("/auth", authRouter);
 
 const updateProfileImage: RequestHandler<{}, {}, UpdateProfileBody> = async (
   req,
@@ -188,7 +189,7 @@ const updateProfileImage: RequestHandler<{}, {}, UpdateProfileBody> = async (
       res.status(400).json({ message: "Please provide a profile image" });
       return;
     }
-    const query = "UPDATE users SET profile_image = $1 WHERE id = $2";
+    const query = "UPDATE users SET profile_image = $1 WHERE user_id = $2";
     const result = await client.query(query, [profile_image, decoded.userId]);
     if (result.rowCount === 0) {
       res.status(401).json({ message: "User not found." });
@@ -202,9 +203,62 @@ const updateProfileImage: RequestHandler<{}, {}, UpdateProfileBody> = async (
   }
 };
 
+const verifyToken = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const token = req.headers["authorization"]?.split(" ")[1];
+
+    if (!token) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET || "");
+
+    res.status(200).json({ message: "Token is valid" });
+  } catch (error) {
+    if (error instanceof TokenExpiredError) {
+      res.status(401).json({ message: "Token expired" });
+      return;
+    }
+
+    console.error("Error verifying JWT:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+const getUserProfile = async (req: Request, res: Response) => {
+  const token = req.headers["authorization"]?.split(" ")[1];
+
+  if (!token) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+
+  const userId = req.params.userID;
+
+  try {
+    const query =
+      "SELECT user_id, email, username, full_name, bio, profile_image, created_at FROM users WHERE user_id = $1";
+    const result = await client.query(query, [userId]);
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const user = result.rows[0];
+    res.status(200).json({ user });
+  } catch (error) {
+    console.error("Error querying user profile:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
 authRouter.post("/register", registerHandler);
 authRouter.post("/login", loginHandler);
 authRouter.get("/profile", profileHandler);
 authRouter.put("/profile/image", updateProfileImage);
+authRouter.post("/verify-token", verifyToken);
+authRouter.get("/userProfile/:userID", getUserProfile);
 
 export default authRouter;
