@@ -73,19 +73,25 @@
       </div>
 
       <div class="flex-grow-1">
-        <nav class="navbar navbar-expand-lg navbar-light navbar-custom p-3">
+        <nav
+          class="navbar navbar-expand-lg navbar-light navbar-custom p-3 flex justify-between"
+        >
           <div class="gap-0">
             <input
               type="text"
               placeholder="Type to search"
               class="search-bar"
             />
-            <button class="btn btn-primary">
+            <button
+              class="btn font-medium bg-[#ffffff62] backdrop-blur-md px-2 py-[6px] rounded-lg shadow-md hover:bg-[#ffffff80] hover:shadow-lg transition-all duration-300"
+            >
               <i class="fa-solid fa-magnifying-glass"></i>
             </button>
           </div>
-          <div class="user">
-            <span><i class="fa-solid fa-user"></i></span>
+          <div
+            class="user w-12 h-12 rounded-full mr-3 border-[1px] border-gray-300 flex justify-center items-center bg-gray-100"
+          >
+            <span><i class="fa-solid fa-user text-gray-700"></i></span>
           </div>
         </nav>
 
@@ -93,17 +99,26 @@
         <div class="container mt-4">
           <div class="row">
             <div class="col-lg-8">
-              <div class="card shadow-lg">
-                <div class="card-header bg-primary text-white">
-                  <h5>What's on your mind?</h5>
+              <div class="card shadow-lg bg-[#ffffff62] backdrop-blur-md">
+                <div
+                  class="card-header bg-[#f7fafc] text-[#2D3748] py-3 rounded-t-lg shadow-md"
+                >
+                  <h5 class="text-1xl font-semibold">What's on your mind?</h5>
                 </div>
+
                 <div class="card-body">
                   <textarea
                     class="form-control"
                     rows="3"
+                    id="postContent"
                     placeholder="Share your thoughts..."
                   ></textarea>
-                  <button class="btn btn-primary mt-3">Post</button>
+                  <button
+                    onclick="postText()"
+                    class="btn font-medium bg-[#ffffff62] backdrop-blur-md px-6 py-2 mt-3 rounded-lg shadow-md hover:bg-[#ffffff80] hover:shadow-lg transition-all duration-300 float-right"
+                  >
+                    Post
+                  </button>
                 </div>
               </div>
 
